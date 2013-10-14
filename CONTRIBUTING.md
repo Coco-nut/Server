@@ -1,3 +1,4 @@
 # Contribution Guidelines
 
-Please submit all issues and pull requests to the [laravel/framework](http://github.com/laravel/framework) repository!
+please don't contribute on this project yet.
+if the project launched, it will be changed status.
