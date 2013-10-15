@@ -15,7 +15,7 @@
 			"app/database/seeds",
 			"app/tests/TestCase.php"
 		],
-        "psr-0": {"App\\Controllers\\": "app/controllers/"}
+        "psr-0": {"\\": "app/controllers/"}
 
 },
 	"scripts": {

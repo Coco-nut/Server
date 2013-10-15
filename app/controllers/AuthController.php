@@ -5,7 +5,6 @@
  * Date: 13. 10. 11.
  * Time: 오후 2:55
  */
-use Illuminate\Support\Facades\Hash;
 
 class AuthController extends BaseController
 {

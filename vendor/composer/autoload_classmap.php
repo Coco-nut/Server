@@ -6,12 +6,19 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
-    'App\\Controllers\\AuthController' => $baseDir . '/app/controllers/AuthController.php',
-    'App\\Controllers\\BaseController' => $baseDir . '/app/controllers/BaseController.php',
+    'Assigned' => $baseDir . '/app/models/Assigned.php',
+    'AuthController' => $baseDir . '/app/controllers/AuthController.php',
+    'BaseController' => $baseDir . '/app/controllers/BaseController.php',
+    'Card' => $baseDir . '/app/models/Card.php',
+    'Checklist' => $baseDir . '/app/models/Checklist.php',
+    'Comment' => $baseDir . '/app/models/Comment.php',
     'DatabaseSeeder' => $baseDir . '/app/database/seeds/DatabaseSeeder.php',
     'EmailAuthenticator' => $baseDir . '/app/models/EmailAuthenticator.php',
+    'Group' => $baseDir . '/app/models/Group.php',
+    'GroupController' => $baseDir . '/app/controllers/GroupController.php',
     'HomeController' => $baseDir . '/app/controllers/HomeController.php',
     'IlluminateQueueClosure' => $vendorDir . '/laravel/framework/src/Illuminate/Queue/IlluminateQueueClosure.php',
+    'MyGroup' => $baseDir . '/app/models/MyGroup.php',
     'SessionHandlerInterface' => $vendorDir . '/symfony/http-foundation/Symfony/Component/HttpFoundation/Resources/stubs/SessionHandlerInterface.php',
     'TestCase' => $baseDir . '/app/tests/TestCase.php',
     'User' => $baseDir . '/app/models/User.php',
