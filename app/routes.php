@@ -13,81 +13,13 @@
 use Illuminate\Support\Facades\Route;
 use App\Controllers\AuthController;
 
-Route::post(
-    'auth/token',
-    function () {
-        $email = Request::header('email');
-        $passPhrase = Request::header('pass-phrase');
-        if (empty($email)) {
-            return Response::make('empty email', 400);
-        }
-        if (empty($passPhrase)) {
-            return Response::make('empty pass', 400);
-        }
-        $name = Input::get('name');
-        if (empty($name)) {
-            return Response::make('empty name', 400);
-        }
-        $phoneNumber = Input::get('phone-number');
-        if (empty($phoneNumber)) {
-            return Response::make('empty phone number', 400);
-        }
-        $isAuthExists = EmailAuthenticator::where('email', '=', $email)->exists();
-
-        // if already exists
-        if ($isAuthExists) {
-            return Response::make('already exists', 403);
-        }
-        // if not exists, INSERT User
-//        $user = User::create(array('name' => $name));
-//        $user->push();
-        $user = new User();
-        $user->name = $name;
-        $user->phone_number = $phoneNumber;
-        $user->save();
-
-        $newSalt = AuthController::getNewSalt();
-        $hashedPassPhrase = AuthController::getHashedPassPhrase($passPhrase, $newSalt);
-        $newToken = AuthController::getNewToken($email, $hashedPassPhrase, $newSalt);
-        $auth = new EmailAuthenticator();
-        $auth->email = $email;
-        $auth->pass_phrase = $hashedPassPhrase;
-        $auth->salt = $newSalt;
-        $auth->token = $newToken;
-        $auth->user_id = $user->id;
-        $auth->save();
-
-        // it's OK
-        return Response::json(array('token' => $auth->token));
-    }
-);
-Route::get(
-    'auth/token',
-    function () {
-        $email = Request::header('email');
-        $passPhrase = Request::header('pass-phrase');
-        if (empty($email)) {
-            return Response::make('empty email', 400);
-        }
-        if (empty($passPhrase)) {
-            return Response::make('empty pass', 400);
-        }
-        $auth = EmailAuthenticator::where('email', '=', $email)->first();
-
-        if (is_null($auth)) {
-            return Response::make('need to create', 404);
-        }
-        // if already exists
-        // if not valid
-        if ($auth->pass_phrase !== AuthController::getHashedPassPhrase($passPhrase, $auth->salt)) {
-            return Response::make(' | password mismatched', 401);
-        }
-        // it's OK
-        return Response::json(array('token' => $auth->token));
-    }
-);
+// TOKEN NEW
+Route::post('auth/token', 'AuthController@postAuthToken');
+// TOKEN GET
+Route::get('auth/token', 'AuthController@getAuthToken');
 
 
+// GROUP NEW
 Route::post(
     'groups/new',
     function () {
@@ -122,7 +54,7 @@ Route::post(
         $group->save();
 
 
-        // TODO: user - group (many to many) relation insert
+        // user - group (many to many) relation insert
         $myGroup = new MyGroup();
         $myGroup->user_id = $user->id;
         $myGroup->group_id = $group->id;
@@ -135,6 +67,7 @@ Route::post(
     }
 );
 
+// GROUP LIST
 Route::get(
     'groups',
     function () {
@@ -166,48 +99,41 @@ Route::get(
         return Response::json(array('groups' => $groupList));
     }
 );
+// TODO: GROUP EDIT
+// TODO: GROUP DELETE
 
-
+// TODO: MEMBER NEW (INVITE)
+// MEMBER LIST
 Route::get(
-    'group/{number}/members',
-    function ($number) {
+    'group/{groupId}/members',
+    function ($groupId) {
         // TODO: check is my group?
-        // TODO: get list of member on group {number}
-        $members = MyGroup::where('group_id', '=', $number)->get();
+        // #: get list of member on group {number}
+        $members = MyGroup::where('group_id', '=', $groupId)->get();
+
         $users = array();
+        // #: get properties of user
         foreach ($members as $member) {
             $user = User::find($member->user_id);
             array_push($users, $user->toArray());
         }
-        // TODO: get properties of user
         return Response::json(array('members' => $users));
     }
 );
+// TODO: MEMBER DELETE
+// (DROP MYSELF - DO NOT DROP OTHER USER)
 
-Route::get(
-    'group/{number}/cards',
-    function ($number) {
-        $group = Group::find($number)->first();
-        // TODO: if not found 404
-        $cards = Card::where('group_id', '=', $group->id)->get();
-        $resultCards = array();
-        foreach ($cards as $card) {
-            array_push($resultCards, $card->toArray());
-        }
-        return Response::json(array('cards' => $resultCards));
-
-    }
-);
+// CARD NEW
 Route::post(
     'group/{number}/card/new',
-    function ($number) {
+    function ($groupId) {
         $title = Input::get('title');
         $body = Input::get('body');
         $rate = Input::get('rate');
         $labelType = Input::get('label-type');
         $labelText = Input::get('label-text');
 
-        $group = Group::find($number)->first();
+        $group = Group::find($groupId)->first();
         $card = new Card();
         $card->group_id = $group->id;
         $card->title = $title;
@@ -220,3 +146,138 @@ Route::post(
         return Response::json(array('card-id' => $card->id));
     }
 );
+// CARD LIST
+Route::get(
+    'group/{groupId}/cards',
+    function ($groupId) {
+        $group = Group::find($groupId)->first();
+        // TODO: if not found 404
+        $cards = Card::where('group_id', '=', $group->id)->get();
+        $resultCards = array();
+        foreach ($cards as $card) {
+            // TODO: add assigned
+            // TODO: add checklists
+            // TODO: add comments
+            array_push($resultCards, $card->toArray());
+        }
+        return Response::json(array('cards' => $resultCards));
+
+    }
+);
+
+// TODO: CARD MODIFY
+// DONE: CARD DELETE
+Route::delete(
+    '/card/{cardId}',
+    function ($cardId) {
+        // TODO: auth check
+        Comment::destroy($cardId);
+    }
+);
+
+// DONE: COMMENT NEW
+Route::post(
+    'card/{cardId}/comment/new',
+    function ($cardId) {
+        // TODO: check auth
+        // TODO: get user and check user is member of card on.
+        $token = Request::header('token');
+        if (empty($token)) {
+            return Response::make('empty token', 400);
+        }
+
+        // validate token
+        $auth = EmailAuthenticator::where('token', '=', $token)->first();
+        if (is_null($auth)) {
+            return Response::make('invalid token', 401);
+        }
+
+        $message = Input::get('message');
+        if (empty($message)) {
+            return Response::make('empty message', 400);
+        }
+
+        $user = User::find($auth->user_id);
+
+        // TODO: get card
+        $card = Card::find($cardId)->first();
+        $comment = new Comment();
+        $comment->message = $message;
+        $comment->user_id = $user->id;
+        $comment->card_id = $card->id;
+        $comment->save();
+
+        return Response::json(array("comment-id" => $comment->id));
+    }
+);
+
+// TODO: COMMENT LIST ?
+// TODO: COMMENT EDIT ?
+// DONE: COMMENT DELETE
+Route::delete(
+    'comment/{commentId}',
+    function ($commentId) {
+        // TODO: auth check
+        Comment::destroy($commentId);
+    }
+);
+
+// TODO: ASSIGN NEW
+Route::post(
+    'card/{cardId}/assigned/new',
+    function ($cardId) {
+        // TODO : auth check
+        // TODO: is user member of my group?
+        $userId = Input::get('user-id');
+
+        $card = Group::find($cardId)->first();
+        $assigned = new Assigned();
+        $assigned->user_id = $userId;
+        $assigned->card_id = $card->id;
+        $assigned->save();
+
+        return Response::json(array('assigned-id' => $assigned->id));
+    }
+);
+
+// TODO: ASSIGN LIST ?
+// TODO: ASSIGN EDIT ?
+// DONE: ASSIGN DELETE
+Route::delete(
+    'card/{cardId}/assigned/{assignedId}',
+    function ($cardId, $assignedId) {
+        // TODO: auth check
+        Assigned::destroy($assignedId);
+    }
+);
+
+// DONE: CHECKLIST NEW
+Route::post(
+    'card/{cardId}/checklist/new',
+    function ($cardId) {
+        // TODO : auth check
+        // TODO: is user member of my group?
+        $description = Input::get('description');
+
+        $card = Card::find($cardId)->first();
+        $checklist = new Checklist();
+        $checklist->card_id = $card->id;
+        $checklist->description = $description;
+        $checklist->save();
+
+        return Response::json(array('checklist-id' => $checklist->id));
+    }
+);
+
+// TODO: CHECKLIST LIST ?
+// TODO: CHECKLIST EDIT ?
+// DONE: CHECKLIST DELETE
+Route::delete(
+    'checklist/{checklistId}',
+    function ($checklistId) {
+        // TODO: auth check
+        Checklist::destroy($checklistId);
+    }
+);
+
+
